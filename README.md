@@ -13,6 +13,7 @@ importlib.metadata.Distribution.discover()
 ```
 to build a list of installed dependencies for the current environment, but ultimately we also want to support other query types,
 like querying the dependency tree of a specific pypi package or egg  
+[PEP-508](https://www.python.org/dev/peps/pep-0508/) provides great detail on how dependencies are specified in the various distribution formats
 <br>
 
 A current example of running the tool might look like this when running in a KDE Plasma Konsole  
