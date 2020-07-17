@@ -13,7 +13,6 @@ def main():
 
     console.print("\n")  # newline to give it some spacing
     console.print(table, justify="left")
-    console.save_html("stdout.html")
 
 
 def get_table_from_packages(packages):
