@@ -1,9 +1,13 @@
 """ module provides definition of the Package format
 and helpers that build an instance of Package """
 
+import logging
 from json import JSONEncoder
 from packageurl import PackageURL
 import purl_extractor
+from pypi_detail_crawler import get_json_from_project_page
+
+log = logging.getLogger("rich")
 
 
 class Package:
@@ -31,6 +35,19 @@ class Package:
             ).to_string()
         else:
             self.package_url = package_url
+        self.detail_info = DetailInformation(get_json_from_project_page(self))
+
+    def get_sdist_info(self):
+        """ return sdist release info for package version, if any """
+        return self.detail_info.get_sdist_release_info(self.version)
+
+    def get_bdist_info(self):
+        """ return bdist release info for package version, if any """
+        return self.detail_info.get_bdist_release_info(self.version)
+
+    def get_release_info(self):
+        """ return info on all dist releases for package version """
+        return self.detail_info.get_release_info(self.version)
 
     def __str__(self):
         return "{}\t{} {}\t\t\tLicense: {}".format(
@@ -64,3 +81,30 @@ class PackageEncoder(JSONEncoder):
         return {
             k: v for k, v in package.__dict__.items() if v is not None and len(v) > 0
         }
+
+
+class DetailInformation:
+    def __init__(self, detail_json):
+        self._detail = detail_json
+
+    def get_release_info(self, version):
+        """ extract release info for requested version from details if any """
+        try:
+            return self._detail["releases"][version]
+        except KeyError as key_error:
+            log.warning(key_error)
+            return []
+
+    def get_sdist_release_info(self, version):
+        """ extract sdist release info from details if any """
+        for dist in self.get_release_info(version):
+            if "sdist" in dist["packagetype"]:
+                return dist
+        return {}
+
+    def get_bdist_release_info(self, version):
+        """ extract bdist release info from details if any """
+        for dist in self.get_release_info(version):
+            if "bdist" in dist["packagetype"]:
+                return dist
+        return {}
