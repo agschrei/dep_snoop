@@ -23,7 +23,7 @@ def get_table_from_packages(packages):
     table.add_column("Name")
     table.add_column("Version")
     table.add_column("License")
-    table.add_column("Release Date")
+    table.add_column("Release Date", justify="left")
     table.add_column("[b]sdist[/b] Size", justify="right")
 
     packages = sorted(packages, key=lambda package: package.name.lower())
@@ -33,6 +33,7 @@ def get_table_from_packages(packages):
         sdist_info = package.get_sdist_info()
         upload_time = datetime.fromisoformat(sdist_info.get("upload_time"))
         days_passed = (datetime.now() - upload_time).days
+        padding = (4-len(str(days_passed)))*" "
         dist_size = round(sdist_info["size"] / 1024)
         if dist_size > 1024:
             dist_size = str(round(dist_size / 1024)) + " MiB"
@@ -48,7 +49,7 @@ def get_table_from_packages(packages):
             package.name,
             package.version,
             dnr_format + package.license,
-            upload_time.strftime("%Y-%m-%d") + f" - {days_passed} days ago",
+            upload_time.strftime("%Y-%m-%d") + f"  | {padding}{days_passed}d ago",
             dist_size,
         )
     return table
