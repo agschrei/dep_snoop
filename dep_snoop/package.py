@@ -71,6 +71,7 @@ class Package:
         """ generate a valid Package from an importlib.metadata.Distribution object """
         pkg = Package.from_metadata(dist.metadata)
         pkg.requirements = dist.requires
+        print(dist.requires)
         return pkg
 
 
