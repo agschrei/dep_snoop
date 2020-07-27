@@ -1,8 +1,14 @@
 """ main entrypoint for snoop """
 from datetime import datetime
+import logging
+import matplotlib.pyplot as plt
+import networkx as nx
 from rich.console import Console
 from rich.table import Table
 from dist_util import get_installed_packages
+from requirements_parser import Version
+
+log = logging.getLogger("rich")
 
 
 def main():
@@ -14,6 +20,37 @@ def main():
     console.print("\n")  # newline to give it some spacing
     console.print(table, justify="left")
 
+
+def gather_dependencies(package, name_map):
+    package.dependencies = []
+    for req in package.requirements:
+        try:
+            dependency = name_map[req.name]
+            package.dependencies.append(dependency)
+            version = Version(name_map[req.name].version)
+            if req.check_compatible(version):
+                log.info("Requirement satisfied for {0}: {1}-{2}".format(package.name,
+                                                                         dependency.name, dependency.version))
+            else:
+                raise KeyError
+        except KeyError as k_e:
+            log.warning(
+                f"Requirement {req.raw_string} not satisfied for {package.name}!")
+    return package
+
+
+def buildGraph(packages):
+    G = nx.Graph()
+    for package in packages:
+        G.add_node(package.name)
+        G.add_edges_from(list(map(lambda dep: (package.name, dep.name), package.dependencies)))
+        G.add_edge("this_package", package.name)
+    plt.figure(figsize=(10,10), dpi=300)
+    pos = nx.spring_layout(G, iterations=50)
+    nx.draw(G, pos, with_labels=False, node_size=50, alpha=0.7, node_color="r")
+    for p in pos:
+        pos[p][1]+=0.1
+    nx.draw_networkx_labels(G, pos)
 
 def get_table_from_packages(packages):
     """ returns a rich.Table built from the packages """
@@ -28,8 +65,12 @@ def get_table_from_packages(packages):
 
     packages = sorted(packages, key=lambda package: package.name.lower())
 
-    for package in packages:
+    name_map = {package.name: package for package in packages}
+    packages = list(map(lambda pkg: gather_dependencies(pkg, name_map), packages))
+    log.info(len(packages))
+    buildGraph(packages)
 
+    for package in packages:
         sdist_info = package.get_sdist_info()
         upload_time = datetime.fromisoformat(sdist_info.get("upload_time"))
         days_passed = (datetime.now() - upload_time).days
@@ -49,7 +90,8 @@ def get_table_from_packages(packages):
             package.name,
             package.version,
             dnr_format + package.license,
-            upload_time.strftime("%Y-%m-%d") + f"  | {padding}{days_passed}d ago",
+            upload_time.strftime("%Y-%m-%d") +
+            f"  | {padding}{days_passed}d ago",
             dist_size,
         )
     return table

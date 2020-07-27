@@ -6,6 +6,7 @@ from json import JSONEncoder
 from packageurl import PackageURL
 import purl_extractor
 from pypi_detail_crawler import get_json_from_project_page
+from requirements_parser import Requirement
 
 log = logging.getLogger("rich")
 
@@ -69,10 +70,19 @@ class Package:
     @classmethod
     def from_dist(cls, dist):
         """ generate a valid Package from an importlib.metadata.Distribution object """
-        pkg = Package.from_metadata(dist.metadata)
-        pkg.requirements = dist.requires
-        print(dist.requires)
+        meta = dist.metadata
+        pkg = Package.from_metadata(meta)
+        if dist.requires is not None:
+            pkg.requirements = list(map(Requirement,
+                                        filter(cls.__filter_requirement_string, dist.requires)))
+            log.info("Requirements: {0}".format(len(pkg.requirements)))
+        else:
+            pkg.requirements = []
         return pkg
+
+    @classmethod
+    def __filter_requirement_string(cls, req: str) -> str:
+        return ";" not in req
 
 
 class PackageEncoder(JSONEncoder):
