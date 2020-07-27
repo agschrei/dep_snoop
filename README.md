@@ -4,7 +4,7 @@
 The ultimate goal for this side-project is to provide the following functionality:
 - [x] rich console output listing the packages installed in your (virtual) environment
 - [ ] project Bill of Materials in JSON format w/ schema
-- [ ] dependency tree that shows which first-level dependencies contribute which transitive dependencies
+- [x] dependency graph that shows which first-level dependencies contribute which transitive dependencies
 - [ ] statistics about your dependencies
 
 At present we use 
